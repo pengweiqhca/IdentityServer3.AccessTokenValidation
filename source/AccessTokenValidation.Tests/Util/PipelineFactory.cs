@@ -15,13 +15,10 @@ namespace AccessTokenValidation.Tests.Util
             IAppBuilder app = new AppBuilder();
             app.SetLoggerFactory(new DiagnosticsLoggerFactory());
 
-            if (configure != null)
-            {
-                configure(app);
-            }
+            configure?.Invoke(app);
 
             app.UseIdentityServerBearerTokenAuthentication(options);
-            
+
             app.Use((context, next) =>
             {
                 var user = context.Authentication.User;

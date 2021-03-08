@@ -12,9 +12,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * limitations under the License.
  */
 
-using IdentityModel.Extensions;
 using Microsoft.Owin.Logging;
 using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.Infrastructure;
@@ -24,6 +24,8 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace IdentityServer3.AccessTokenValidation
@@ -72,7 +74,7 @@ namespace IdentityServer3.AccessTokenValidation
 
             if (_options.EnableValidationResultCache)
             {
-                tokenHash = context.Token.ToSha256();
+                tokenHash = ToSha256(context.Token);
 
                 var cachedClaims = await _options.ValidationResultCache.GetAsync(tokenHash);
                 if (cachedClaims != null)
@@ -142,6 +144,16 @@ namespace IdentityServer3.AccessTokenValidation
                             _options.RoleClaimType);
 
             context.SetTicket(new AuthenticationTicket(id, new AuthenticationProperties()));
+        }
+
+        private static string ToSha256(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+
+            using (var shA256 = SHA256.Create())
+            {
+                return Convert.ToBase64String(shA256.ComputeHash(Encoding.ASCII.GetBytes(input)));
+            }
         }
     }
 }

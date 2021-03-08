@@ -15,12 +15,13 @@
  */
 
 using IdentityServer3.AccessTokenValidation;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.Owin.Extensions;
 using Microsoft.Owin.Logging;
 using Microsoft.Owin.Security.Jwt;
 using Microsoft.Owin.Security.OAuth;
 using System;
-using System.IdentityModel.Tokens;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
@@ -106,7 +107,7 @@ namespace Owin
 
         private static Lazy<OAuthBearerAuthenticationOptions> ConfigureEndpointValidation(IdentityServerBearerTokenAuthenticationOptions options, ILoggerFactory loggerFactory)
         {
-            return new Lazy<OAuthBearerAuthenticationOptions>(() => 
+            return new Lazy<OAuthBearerAuthenticationOptions>(() =>
             {
                 if (options.EnableValidationResultCache)
                 {
@@ -139,7 +140,7 @@ namespace Owin
 
         internal static Lazy<OAuthBearerAuthenticationOptions> ConfigureLocalValidation(IdentityServerBearerTokenAuthenticationOptions options, ILoggerFactory loggerFactory)
         {
-            return new Lazy<OAuthBearerAuthenticationOptions>(() => 
+            return new Lazy<OAuthBearerAuthenticationOptions>(() =>
             {
                 JwtFormat tokenFormat = null;
 
@@ -154,7 +155,7 @@ namespace Owin
                     {
                         ValidIssuer = options.IssuerName,
                         ValidAudience = audience,
-                        IssuerSigningToken = new X509SecurityToken(options.SigningCertificate),
+                        IssuerSigningKey = new X509SecurityKey(options.SigningCertificate),
 
                         NameClaimType = options.NameClaimType,
                         RoleClaimType = options.RoleClaimType,
@@ -173,7 +174,7 @@ namespace Owin
                     var discoveryEndpoint = options.Authority.EnsureTrailingSlash();
                     discoveryEndpoint += ".well-known/openid-configuration";
 
-                    var issuerProvider = new DiscoveryDocumentIssuerSecurityTokenProvider(
+                    var issuerProvider = new DiscoveryDocumentIssuerSecurityKeyProvider(
                         discoveryEndpoint,
                         options,
                         loggerFactory);
@@ -211,29 +212,13 @@ namespace Owin
             }, LazyThreadSafetyMode.PublicationOnly);
         }
 
-        private static SecurityKey ResolveRsaKeys(
-            string token, 
-            SecurityToken securityToken, 
-            SecurityKeyIdentifier keyIdentifier, 
+        private static IEnumerable<SecurityKey> ResolveRsaKeys(
+            string token,
+            SecurityToken securityToken,
+            string kid,
             TokenValidationParameters validationParameters)
         {
-            string id = null;
-            foreach (var keyId in keyIdentifier)
-            {
-                var nk = keyId as NamedKeySecurityKeyIdentifierClause;
-                if (nk != null)
-                {
-                    id = nk.Id;
-                    break;
-                }
-            }
-
-            if (id == null) return null;
-
-            var issuerToken = validationParameters.IssuerSigningTokens.FirstOrDefault(it => it.Id == id);
-            if (issuerToken == null) return null;
-
-            return issuerToken.SecurityKeys.FirstOrDefault();
+            return validationParameters.IssuerSigningKeys.Where(it => it.KeyId == kid);
         }
     }
 }

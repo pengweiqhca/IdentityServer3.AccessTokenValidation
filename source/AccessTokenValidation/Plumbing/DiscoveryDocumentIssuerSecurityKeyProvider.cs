@@ -15,26 +15,27 @@
  */
 
 using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.Owin.Logging;
 using Microsoft.Owin.Security.Jwt;
 using System;
 using System.Collections.Generic;
-using System.IdentityModel.Tokens;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Threading;
 
 namespace IdentityServer3.AccessTokenValidation
 {
-    internal class DiscoveryDocumentIssuerSecurityTokenProvider : IIssuerSecurityTokenProvider
+    internal class DiscoveryDocumentIssuerSecurityKeyProvider : IIssuerSecurityKeyProvider
     {
         private readonly ReaderWriterLockSlim _synclock = new ReaderWriterLockSlim();
         private readonly ConfigurationManager<OpenIdConnectConfiguration> _configurationManager;
         private readonly ILogger _logger;
         private string _issuer;
-        private IEnumerable<SecurityToken> _tokens;
+        private IEnumerable<SecurityKey> _keys;
 
-        public DiscoveryDocumentIssuerSecurityTokenProvider(string discoveryEndpoint, IdentityServerBearerTokenAuthenticationOptions options, ILoggerFactory loggerFactory)
+        public DiscoveryDocumentIssuerSecurityKeyProvider(string discoveryEndpoint, IdentityServerBearerTokenAuthenticationOptions options, ILoggerFactory loggerFactory)
         {
             _logger = loggerFactory.Create(this.GetType().FullName);
 
@@ -51,7 +52,7 @@ namespace IdentityServer3.AccessTokenValidation
                 webRequestHandler.ServerCertificateValidationCallback = options.BackchannelCertificateValidator.Validate;
             }
 
-            _configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(discoveryEndpoint, new HttpClient(handler))
+            _configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(discoveryEndpoint, new OpenIdConnectConfigurationRetriever(), new HttpClient(handler))
             {
                 AutomaticRefreshInterval = options.AutomaticRefreshInterval
             };
@@ -112,7 +113,7 @@ namespace IdentityServer3.AccessTokenValidation
         /// <value>
         /// All known security tokens.
         /// </value>
-        public IEnumerable<SecurityToken> SecurityTokens
+        public IEnumerable<SecurityKey> SecurityKeys
         {
             get
             {
@@ -120,7 +121,7 @@ namespace IdentityServer3.AccessTokenValidation
                 _synclock.EnterReadLock();
                 try
                 {
-                    return _tokens;
+                    return _keys;
                 }
                 finally
                 {
@@ -134,7 +135,7 @@ namespace IdentityServer3.AccessTokenValidation
             _synclock.EnterWriteLock();
             try
             {
-                var result = AsyncHelper.RunSync(async () => await _configurationManager.GetConfigurationAsync());
+                var result = AsyncHelper.RunSync(_configurationManager.GetConfigurationAsync);
 
                 if (result.JsonWebKeySet == null)
                 {
@@ -142,7 +143,7 @@ namespace IdentityServer3.AccessTokenValidation
                     throw new InvalidOperationException("Discovery document has no configured signing key. aborting.");
                 }
 
-                var tokens = new List<SecurityToken>();
+                var keys = new List<SecurityKey>();
                 foreach (var key in result.JsonWebKeySet.Keys)
                 {
                     var rsa = RSA.Create();
@@ -152,15 +153,15 @@ namespace IdentityServer3.AccessTokenValidation
                         Modulus = Base64UrlEncoder.DecodeBytes(key.N)
                     });
 
-                    tokens.Add(new RsaSecurityToken(rsa, key.Kid));
+                    keys.Add(new RsaSecurityKey(rsa) { KeyId = key.Kid });
                 }
 
                 _issuer = result.Issuer;
-                _tokens = tokens;
+                _keys = keys;
             }
             catch (Exception ex)
             {
-                _logger.WriteError("Error contacting discovery endpoint: " + ex.ToString());
+                _logger.WriteError("Error contacting discovery endpoint: " + ex);
                 throw;
             }
             finally

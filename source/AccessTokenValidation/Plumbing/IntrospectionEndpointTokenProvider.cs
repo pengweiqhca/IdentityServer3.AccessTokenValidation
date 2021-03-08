@@ -64,8 +64,8 @@ namespace IdentityServer3.AccessTokenValidation
             if (!string.IsNullOrEmpty(options.ClientId))
             {
                 _client = new IntrospectionClient(
-                    introspectionEndpoint, 
-                    options.ClientId, 
+                    introspectionEndpoint,
+                    options.ClientId,
                     options.ClientSecret,
                     handler);
             }
@@ -115,12 +115,12 @@ namespace IdentityServer3.AccessTokenValidation
             var claims = new List<Claim>();
             foreach (var claim in response.Claims)
             {
-                if (!string.Equals(claim.Item1, "active", StringComparison.Ordinal))
+                if (!string.Equals(claim.Type, "active", StringComparison.Ordinal))
                 {
-                    claims.Add(new Claim(claim.Item1, claim.Item2));
+                    claims.Add(new Claim(claim.Type, claim.Value));
                 }
             }
-            
+
             if (_options.EnableValidationResultCache)
             {
                 await _options.ValidationResultCache.AddAsync(context.Token, claims);

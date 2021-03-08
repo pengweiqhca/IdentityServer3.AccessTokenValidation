@@ -9,7 +9,11 @@ namespace AccessTokenValidation.Tests.Util
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            var response = new HttpResponseMessage(HttpStatusCode.BadGateway);
+            var response = new HttpResponseMessage(HttpStatusCode.BadGateway)
+            {
+                RequestMessage = request,
+                Content = new StringContent("Bad Gateway")
+            };
             return Task.FromResult(response);
         }
     }
