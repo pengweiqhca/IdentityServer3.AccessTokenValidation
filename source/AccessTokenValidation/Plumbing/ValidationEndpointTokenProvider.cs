@@ -55,8 +55,7 @@ namespace IdentityServer3.AccessTokenValidation
             if (options.BackchannelCertificateValidator != null)
             {
                 // Set the cert validate callback
-                var webRequestHandler = handler as WebRequestHandler;
-                if (webRequestHandler == null)
+                if (!(handler is WebRequestHandler webRequestHandler))
                 {
 					throw new InvalidOperationException("The back channel handler must derive from WebRequestHandler in order to use a certificate validator");
                 }
@@ -76,7 +75,7 @@ namespace IdentityServer3.AccessTokenValidation
             {
                 tokenHash = ToSha256(context.Token);
 
-                var cachedClaims = await _options.ValidationResultCache.GetAsync(tokenHash);
+                var cachedClaims = await _options.ValidationResultCache.GetAsync(tokenHash).ConfigureAwait(false);
                 if (cachedClaims != null)
                 {
                     SetAuthenticationTicket(context, cachedClaims);
@@ -89,10 +88,10 @@ namespace IdentityServer3.AccessTokenValidation
                 { "token", context.Token }
             };
 
-            HttpResponseMessage response = null;
+            HttpResponseMessage response;
             try
             {
-                response = await _client.PostAsync(_tokenValidationEndpoint, new FormUrlEncodedContent(form));
+                response = await _client.PostAsync(_tokenValidationEndpoint, new FormUrlEncodedContent(form)).ConfigureAwait(false);
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
                     _logger.WriteInformation("Error returned from token validation endpoint: " + response.ReasonPhrase);
@@ -101,20 +100,18 @@ namespace IdentityServer3.AccessTokenValidation
             }
             catch (Exception ex)
             {
-                _logger.WriteError("Exception while contacting token validation endpoint: " + ex.ToString());
+                _logger.WriteError("Exception while contacting token validation endpoint: " + ex);
                 return;
             }
 
-            var jsonString = await response.Content.ReadAsStringAsync();
+            var jsonString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             var dictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
 
             var claims = new List<Claim>();
 
             foreach (var item in dictionary)
             {
-                var values = item.Value as IEnumerable<object>;
-
-                if (values == null)
+                if (!(item.Value is IEnumerable<object> values))
                 {
                     claims.Add(new Claim(item.Key, item.Value.ToString()));
                 }
@@ -129,7 +126,7 @@ namespace IdentityServer3.AccessTokenValidation
 
             if (_options.EnableValidationResultCache)
             {
-                await _options.ValidationResultCache.AddAsync(tokenHash, claims);
+                await _options.ValidationResultCache.AddAsync(tokenHash, claims).ConfigureAwait(false);
             }
 
             SetAuthenticationTicket(context, claims);

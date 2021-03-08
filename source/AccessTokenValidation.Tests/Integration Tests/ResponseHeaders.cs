@@ -1,9 +1,9 @@
 ﻿using AccessTokenValidation.Tests.Util;
 using FluentAssertions;
+using IdentityModel.Client;
 using IdentityServer3.AccessTokenValidation;
 using Owin;
 using System;
-using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -13,7 +13,7 @@ namespace AccessTokenValidation.Tests.Integration_Tests
 {
     public class ResponseHeaders
     {
-        IdentityServerBearerTokenAuthenticationOptions _options = new IdentityServerBearerTokenAuthenticationOptions
+        private readonly IdentityServerBearerTokenAuthenticationOptions _options = new IdentityServerBearerTokenAuthenticationOptions
         {
             IssuerName = TokenFactory.DefaultIssuer,
             SigningCertificate = new X509Certificate2(Convert.FromBase64String(TokenFactory.DefaultPublicKey)),

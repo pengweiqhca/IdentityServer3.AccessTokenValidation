@@ -88,11 +88,11 @@ namespace IdentityServer3.AccessTokenValidation
         {
             var context = new OwinContext(environment);
 
-            var token = await GetTokenAsync(context);
+            var token = await GetTokenAsync(context).ConfigureAwait(false);
 
             if (token == null)
             {
-                await _next(environment);
+                await _next(environment).ConfigureAwait(false);
                 return;
             }
 
@@ -104,13 +104,13 @@ namespace IdentityServer3.AccessTokenValidation
                 // see if local validation is setup
                 if (_localValidationFunc != null)
                 {
-                    await _localValidationFunc.Value(environment);
+                    await _localValidationFunc.Value(environment).ConfigureAwait(false);
                     return;
                 }
                 // otherwise use validation endpoint
                 if (_endpointValidationFunc != null)
                 {
-                    await _endpointValidationFunc.Value(environment);
+                    await _endpointValidationFunc.Value(environment).ConfigureAwait(false);
                     return;
                 }
 
@@ -121,14 +121,14 @@ namespace IdentityServer3.AccessTokenValidation
                 // use validation endpoint
                 if (_endpointValidationFunc != null)
                 {
-                    await _endpointValidationFunc.Value(environment);
+                    await _endpointValidationFunc.Value(environment).ConfigureAwait(false);
                     return;
                 }
 
                 _logger.WriteWarning("No validator configured for reference token");
             }
 
-            await _next(environment);
+            await _next(environment).ConfigureAwait(false);
         }
 
         private async Task<string> GetTokenAsync(OwinContext context)
@@ -148,7 +148,7 @@ namespace IdentityServer3.AccessTokenValidation
             if (_options.TokenProvider != null)
             {
                 var requestTokenContext = new OAuthRequestTokenContext(context, requestToken);
-                await _options.TokenProvider.RequestToken(requestTokenContext);
+                await _options.TokenProvider.RequestToken(requestTokenContext).ConfigureAwait(false);
 
                 // if no token found, no further work possible
                 if (string.IsNullOrEmpty(requestTokenContext.Token))

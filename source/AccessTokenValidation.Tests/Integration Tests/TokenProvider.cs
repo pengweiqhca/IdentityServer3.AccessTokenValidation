@@ -1,22 +1,20 @@
 ﻿using AccessTokenValidation.Tests.Util;
-using IdentityServer3.AccessTokenValidation;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
-using Xunit;
 using FluentAssertions;
+using IdentityModel.Client;
+using IdentityServer3.AccessTokenValidation;
 using Microsoft.Owin.Security.OAuth;
+using System;
 using System.Net;
 using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
+using Xunit;
 
 namespace AccessTokenValidation.Tests.Integration_Tests
 {
     public class TokenProvider
     {
-        IdentityServerBearerTokenAuthenticationOptions _options = new IdentityServerBearerTokenAuthenticationOptions
+        private readonly IdentityServerBearerTokenAuthenticationOptions _options = new IdentityServerBearerTokenAuthenticationOptions
         {
             IssuerName = TokenFactory.DefaultIssuer,
             SigningCertificate = new X509Certificate2(Convert.FromBase64String(TokenFactory.DefaultPublicKey)),
@@ -56,7 +54,7 @@ namespace AccessTokenValidation.Tests.Integration_Tests
                 OnValidateIdentity = c =>
                 {
                     c.Rejected();
-                    
+
                     return Task.FromResult(0);
                 }
             };

@@ -57,7 +57,7 @@ namespace IdentityServer3.AccessTokenValidation
 
             if (!string.IsNullOrWhiteSpace(_options.AuthenticationType))
             {
-                var result = await context.Authentication.AuthenticateAsync(_options.AuthenticationType);
+                var result = await context.Authentication.AuthenticateAsync(_options.AuthenticationType).ConfigureAwait(false);
                 if (result != null && result.Identity != null)
                 {
                     principal = new ClaimsPrincipal(result.Identity);
@@ -70,13 +70,13 @@ namespace IdentityServer3.AccessTokenValidation
 
             if (principal == null || principal.Identity == null || !principal.Identity.IsAuthenticated)
             {
-                await _next(env);
+                await _next(env).ConfigureAwait(false);
                 return;
             }
 
             if (ScopesFound(context))
             {
-                await _next(env);
+                await _next(env).ConfigureAwait(false);
                 return;
             }
 

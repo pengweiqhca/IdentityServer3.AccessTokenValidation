@@ -18,10 +18,8 @@ using IdentityModel.Client;
 using Microsoft.Owin.Logging;
 using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.Infrastructure;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -52,8 +50,7 @@ namespace IdentityServer3.AccessTokenValidation
             if (options.BackchannelCertificateValidator != null)
             {
                 // Set the cert validate callback
-                var webRequestHandler = handler as WebRequestHandler;
-                if (webRequestHandler == null)
+                if (!(handler is WebRequestHandler webRequestHandler))
                 {
                     throw new InvalidOperationException("The back channel handler must derive from WebRequestHandler in order to use a certificate validator");
                 }
@@ -63,17 +60,33 @@ namespace IdentityServer3.AccessTokenValidation
 
             if (!string.IsNullOrEmpty(options.ClientId))
             {
+#if NET45
                 _client = new IntrospectionClient(
                     introspectionEndpoint,
                     options.ClientId,
                     options.ClientSecret,
                     handler);
+#else
+                _client = new IntrospectionClient(new HttpClient(handler), new IntrospectionClientOptions
+                {
+                    Address = introspectionEndpoint,
+                    ClientId = options.ClientId,
+                    ClientSecret = options.ClientSecret
+                });
+#endif
             }
             else
             {
+#if NET45
                 _client = new IntrospectionClient(
                     introspectionEndpoint,
                     innerHttpMessageHandler: handler);
+#else
+                _client = new IntrospectionClient(new HttpClient(handler), new IntrospectionClientOptions
+                {
+                    Address = introspectionEndpoint,
+                });
+#endif
             }
 
             _options = options;
@@ -83,18 +96,25 @@ namespace IdentityServer3.AccessTokenValidation
         {
             if (_options.EnableValidationResultCache)
             {
-                var cachedClaims = await _options.ValidationResultCache.GetAsync(context.Token);
+                var cachedClaims = await _options.ValidationResultCache.GetAsync(context.Token).ConfigureAwait(false);
                 if (cachedClaims != null)
                 {
                     SetAuthenticationTicket(context, cachedClaims);
                     return;
                 }
             }
-
+#if NET45
             IntrospectionResponse response;
+#else
+            TokenIntrospectionResponse response;
+#endif
             try
             {
-                response = await _client.SendAsync(new IntrospectionRequest { Token = context.Token });
+#if NET45
+                response = await _client.SendAsync(new IntrospectionRequest { Token = context.Token }).ConfigureAwait(false);
+#else
+                response = await _client.Introspect(context.Token).ConfigureAwait(false);
+#endif
                 if (response.IsError)
                 {
                     _logger.WriteError("Error returned from introspection endpoint: " + response.Error);
@@ -108,7 +128,7 @@ namespace IdentityServer3.AccessTokenValidation
             }
             catch (Exception ex)
             {
-                _logger.WriteError("Exception while contacting introspection endpoint: " + ex.ToString());
+                _logger.WriteError("Exception while contacting introspection endpoint: " + ex);
                 return;
             }
 
@@ -123,7 +143,7 @@ namespace IdentityServer3.AccessTokenValidation
 
             if (_options.EnableValidationResultCache)
             {
-                await _options.ValidationResultCache.AddAsync(context.Token, claims);
+                await _options.ValidationResultCache.AddAsync(context.Token, claims).ConfigureAwait(false);
             }
 
             SetAuthenticationTicket(context, claims);

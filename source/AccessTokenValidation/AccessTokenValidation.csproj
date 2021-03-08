@@ -1,16 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net45</TargetFramework>
+    <TargetFrameworks>net45;net461</TargetFrameworks>
     <AssemblyName>IdentityServer3.AccessTokenValidation</AssemblyName>
     <RootNamespace>IdentityServer3.AccessTokenValidation</RootNamespace>
     <Version>3.0.0</Version>
     <AssemblyVersion>1.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.</FileVersion>
+    <FileVersion>1.0.0</FileVersion>
     <Company>AccessTokenValidationMiddleware</Company>
     <Copyright>Copyright ©  2015 Dominick Baier, Brock Allen &amp; Contributors</Copyright>
     <AssemblyTitle>Access Toke Validation Middleware for IdentityServer3</AssemblyTitle>
-
 
     <DebugSymbols>True</DebugSymbols>
     <Deterministic>True</Deterministic>
@@ -21,12 +20,17 @@
     <RepositoryUrl>https://github.com/pengweiqhca/IdentityServer3.AccessTokenValidation/tree/master</RepositoryUrl>
     <PackageProjectUrl>$(RepositoryUrl)/source/AccessTokenValidation</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
+    <Description>Access token validation middleware for JWT and reference tokens issued by IdentityServer3.</Description>
+    <PackageIconUrl>https://identityserver.github.io/Documentation/assets/images/icons/IDserver_icon128.jpg</PackageIconUrl>
+    <PackageTags>IdentityServer OpenID Connect OpenIDConnect OAuth2 OWIN ASP.NET Katana WebApi SSO Federation Claims Identity JWT token</PackageTags>
+    <Authors>Brock Allen, Dominick Baier</Authors>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="5.6.0" />
+    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="6.8.0" />
     <PackageReference Include="Microsoft.Owin.Security.Jwt" Version="4.1.1" />
-    <PackageReference Include="IdentityModel" Version="[2.0.0, 4.0.0)" />
+    <PackageReference Include="IdentityModel" Version="[2.0.0, 4.0.0)" Condition="'$(TargetFramework)' == 'net45'" />
+    <PackageReference Include="IdentityModel" Version="4.0.0" Condition="'$(TargetFramework)' == 'net461'" />
 
     <PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="4.*" PrivateAssets="All" />
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.*" PrivateAssets="All" Condition="'$(OS)' != 'Windows_NT'" />
@@ -35,4 +39,5 @@
     <Reference Include="System.Net.Http.WebRequest" />
     <Reference Include="System.Runtime.Caching" />
   </ItemGroup>
+
 </Project>

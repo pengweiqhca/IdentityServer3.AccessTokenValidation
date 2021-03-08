@@ -1,5 +1,6 @@
 ﻿using AccessTokenValidation.Tests.Util;
 using FluentAssertions;
+using IdentityModel.Client;
 using IdentityServer3.AccessTokenValidation;
 using System;
 using System.Net;
@@ -12,7 +13,7 @@ namespace AccessTokenValidation.Tests.Integration_Tests
 {
     public class StaticLocal
     {
-        IdentityServerBearerTokenAuthenticationOptions _options = new IdentityServerBearerTokenAuthenticationOptions
+        private readonly IdentityServerBearerTokenAuthenticationOptions _options = new IdentityServerBearerTokenAuthenticationOptions
         {
             IssuerName = TokenFactory.DefaultIssuer,
             SigningCertificate = new X509Certificate2(Convert.FromBase64String(TokenFactory.DefaultPublicKey)),

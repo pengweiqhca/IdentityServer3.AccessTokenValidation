@@ -1,5 +1,6 @@
 ﻿using AccessTokenValidation.Tests.Util;
 using FluentAssertions;
+using IdentityModel.Client;
 using IdentityServer3.AccessTokenValidation;
 using System;
 using System.Net;
@@ -11,7 +12,7 @@ namespace AccessTokenValidation.Tests.Integration_Tests
 {
     public class DynamicLocal
     {
-        IdentityServerBearerTokenAuthenticationOptions _options = new IdentityServerBearerTokenAuthenticationOptions
+        private readonly IdentityServerBearerTokenAuthenticationOptions _options = new IdentityServerBearerTokenAuthenticationOptions
         {
             Authority = "https://discodoc",
             ValidationMode = ValidationMode.Local,

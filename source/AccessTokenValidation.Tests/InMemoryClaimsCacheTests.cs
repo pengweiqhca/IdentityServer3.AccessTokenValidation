@@ -8,7 +8,7 @@ using Xunit;
 
 namespace AccessTokenValidation.Tests
 {
-	public class InMemoryClaimsCacheTests
+    public class InMemoryClaimsCacheTests
 	{
         const string Category = "InMemoryClaimsCache";
 		protected double ExpiryClaimSaysTokenExpiresInMinutes;
@@ -17,31 +17,31 @@ namespace AccessTokenValidation.Tests
 		ICache _cache;
 		IClock _clock;
 		protected IEnumerable<Claim> Claims;
-		string token = "foo";
-		protected DateTimeOffset ExpectedCacheExpiry;
+        private const string Token = "foo";
+        protected DateTimeOffset ExpectedCacheExpiry;
 		protected DateTimeOffset ExpiryClaimSaysTokenExpiresAt;
 		protected DateTimeOffset CacheExpiryEvictsTokenAt;
 		protected InMemoryValidationResultCache Sut;
 
 		[Fact]
         [Trait("Category", Category)]
-        public void InvokingConstructor_WithOptionsOnly_ShouldNotError() 
+        public void InvokingConstructor_WithOptionsOnly_ShouldNotError()
 		{
-			var options = new IdentityServerBearerTokenAuthenticationOptions();			
+			var options = new IdentityServerBearerTokenAuthenticationOptions();
 
 			new InMemoryValidationResultCache(options);
 		}
 
 		[Fact]
         [Trait("Category", Category)]
-        public void InvokingConstructor_WithNullIClock_ShouldError() 
+        public void InvokingConstructor_WithNullIClock_ShouldError()
 		{
-			var options = new IdentityServerBearerTokenAuthenticationOptions();			
+			var options = new IdentityServerBearerTokenAuthenticationOptions();
 
 			Assert.Throws<ArgumentNullException>(() => new InMemoryValidationResultCache(options, null, new Cache()));
 		}
-
-		[Fact]
+#if NET45
+        [Fact]
         [Trait("Category", Category)]
         public void WhenTokenExpiryClaimExpiresBeforeClaimsCacheDuration_CacheExpiry_ShouldUseTokenExpiryClaim() {
 			ExpiryClaimSaysTokenExpiresInMinutes = 1;
@@ -49,16 +49,16 @@ namespace AccessTokenValidation.Tests
 			Arrange(() =>
 				{
 					// mimic the DateTimeOffset rounding that happens via serialisation/deserialisation in the actual implementation
-					ExpectedCacheExpiry = ExpiryClaimSaysTokenExpiresAt.ToEpochTime().ToDateTimeOffsetFromEpoch(); 
+					ExpectedCacheExpiry = ExpiryClaimSaysTokenExpiresAt.ToEpochTime().ToDateTimeOffsetFromEpoch();
 				});
 
 			// act
-			Sut.AddAsync(token, Claims);
+			Sut.AddAsync(Token, Claims);
 
-			Mock.Get(_cache).Verify(c => 
+			Mock.Get(_cache).Verify(c =>
 				c.Add(It.IsAny<string>(), It.IsAny<object>(), It.Is<DateTimeOffset>(d => d == ExpectedCacheExpiry)));
 		}
-
+#endif
 		[Fact]
         [Trait("Category", Category)]
         public void WhenTokenExpiryClaimExpiresAfterClaimsCacheDuration_CacheExpiry_ShouldUseClaimsCacheDuration() {
@@ -67,9 +67,9 @@ namespace AccessTokenValidation.Tests
 			Arrange(() => ExpectedCacheExpiry = CacheExpiryEvictsTokenAt);
 
 			// act
-			Sut.AddAsync(token, Claims);
+			Sut.AddAsync(Token, Claims);
 
-			Mock.Get(_cache).Verify(c => 
+			Mock.Get(_cache).Verify(c =>
 				c.Add(It.IsAny<string>(), It.IsAny<object>(), It.Is<DateTimeOffset>(d => d == ExpectedCacheExpiry)));
 		}
 
@@ -82,11 +82,14 @@ namespace AccessTokenValidation.Tests
 				};
 			ExpiryClaimSaysTokenExpiresAt = _clock.UtcNow.AddMinutes(ExpiryClaimSaysTokenExpiresInMinutes);
 			CacheExpiryEvictsTokenAt = _clock.UtcNow.Add(_options.ValidationResultCacheDuration);
-			
-			// setup claims to include expiry claim
-			Claims = new[] {new Claim("bar","baz"), new Claim(ClaimTypes.Expiration,ExpiryClaimSaysTokenExpiresAt.ToEpochTime().ToString()) };
 
-			specifyExpectedCacheExpiry();
+            // setup claims to include expiry claim
+#if NET45
+            Claims = new[] {new Claim("bar","baz"), new Claim(ClaimTypes.Expiration,ExpiryClaimSaysTokenExpiresAt.ToEpochTime().ToString()) };
+#else
+            Claims = new[] {new Claim("bar","baz"), new Claim(ClaimTypes.Expiration,ExpiryClaimSaysTokenExpiresAt.ToUnixTimeSeconds().ToString()) };
+#endif
+            specifyExpectedCacheExpiry();
 
 			DebugToConsole(DateTime.Now, ExpiryClaimSaysTokenExpiresAt,  _options, CacheExpiryEvictsTokenAt, ExpectedCacheExpiry);
 			Sut = new InMemoryValidationResultCache(_options, _clock, _cache);
